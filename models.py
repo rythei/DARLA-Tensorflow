@@ -133,7 +133,9 @@ class BetaVAE():
         self.latent_dim = 100
         self.batch_size = 64
         self.BETA = 1
+        self.epochs = 10
         self.learning_rate = 1e-4
+        self.from_scratch = True
 
         self.x = tf.placeholder(tf.float32, [None, 64, 64, 1])
 
@@ -215,6 +217,39 @@ class BetaVAE():
 
     def get_shape(self):
         return self.x_hat.get_shape()
+
+    def train(self, x):
+        N = len(x)
+        best_loss = 1e8
+        with tf.Session() as sess:
+            saver = tf.train.Saver()
+            sess.run(tf.global_variables_initializer())
+
+            if not self.from_scratch:
+                saver.restore(sess, save_path=self.save_path)
+
+            for epoch in range(self.epochs):
+                training_batch = zip(range(0, N, self.batch_size),
+                                     range(self.batch_size, N + 1, self.batch_size))
+
+                x = shuffle(x)
+
+                print('Epoch: ', epoch)
+                batch_best_loss = best_loss
+                iter = 0
+                for start, end in training_batch:
+                    _, loss_val = sess.run([self.optimizer, self.cost], feed_dict={self.x: x[start:end]})
+
+                    if loss_val < batch_best_loss:
+                        batch_best_loss = loss_val
+
+                    if iter % 10 == 0:
+                        print("Iter: ", iter, "Loss: ", loss_val)
+
+                    iter += 1
+                if batch_best_loss < best_loss:
+                    best_loss = batch_best_loss
+                    saver.save(sess, save_path=self.save_path)
 
 
 if __name__ == '__main__':
