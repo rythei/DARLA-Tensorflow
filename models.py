@@ -15,7 +15,7 @@ class DAE():
         self.noise = tf.random_normal([self.batch_size, 64, 64, 1], 0, .1, tf.float32)
 
         self.x = tf.placeholder(tf.float32, [self.batch_size, 64, 64, 1])
-        self.noisy_x = tf.add(self.x, self.noise)
+        self.noisy_x = tf.clip_by_value(tf.add(self.x, self.noise), 0, 1)
 
         self.z = self.encoder(self.noisy_x, 'encoder', None)
         self.x_hat = self.decoder(self.z, 'decoder', None)
